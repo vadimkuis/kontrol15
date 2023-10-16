@@ -20,32 +20,52 @@ Promise.all(
         cities = response[1];
         specializations = response[2];
 
-        console.log('1. Создайте самостоятельную функцию getInfo, которая будет возвращать в одной строке имя, фамилию и город пользователя:');
+        console.log('2. Создайте самостоятельную функцию getInfo, которая будет возвращать в одной строке имя, фамилию и город пользователя:');
         persons.forEach(person => {
             console.log(getInfo.call(person));
         });
 
-        console.log('2. Найдите среди пользователей всех дизайнеров, которые владеют Figma:');
+        console.log('3. Найдите среди пользователей всех дизайнеров, которые владеют Figma:');
         const FigmaDesigners = getFigmaDesigners();
         FigmaDesigners.forEach(designer => {
             console.log(getInfo.call(designer));
         });
 
-        console.log('3.  Найдите первого попавшегося разработчика, который владеет React:');
+        console.log('4.  Найдите первого попавшегося разработчика, который владеет React:');
         const DeveloperReact = getDeveloperReact();
         DeveloperReact.forEach(developer => {
             console.log(getInfo.call(developer));
         });
 
-        console.log('4. Все ли пользователи старше 18 лет:');
+        console.log('5. Все ли пользователи старше 18 лет:');
         checkAge();
 
-        console.log('5. backend-разработчики из Москвы, которые ищут работу на полный день в порядке возрастания зарплатных ожиданий:');
-        const BackendDevelopers = getBackendDevelopersFromMoscow();
+        console.log('6. backend-разработчики из Москвы, которые ищут работу на полный день в порядке возрастания зарплатных ожиданий:');
+        const BackendDevelopers = BackendDevelopersFromMoscowAll();
         BackendDevelopers.forEach(backend => {
             console.log(getInfo.call(backend));
         });
+        console.log('7.Найдите всех дизайнеров, которые владеют Photoshop и Figma одновременно на уровне не ниже 6 баллов:');
+        const DesignersFigmaAndPhotoshop = figmaAndPhotoshop();
+        DesignersFigmaAndPhotoshop.forEach(designer => {
+            console.log(getInfo.call(designer));
+        });
 
+        console.log('8.Команда для разработки проекта:');
+        const DesignersFigma = createDesigner();
+        DesignersFigma.forEach(designer => {
+            console.log("Дизайнер, который лучше всех владеет Figma: " + getInfo.call(designer));
+        });
+
+        const DeveloperAngular = createDeveloper();
+        DeveloperAngular.forEach(developer => {
+            console.log("Frontend разработчик с самым высоким уровнем знания Angular:  " + getInfo.call(developer));
+        });
+
+        const BackendGo = createBackendGo();
+        BackendGo.forEach(backend => {
+            console.log("Лучший backend разработчика на Go:  " + getInfo.call(backend));
+        });
     });
 
 //2. Создайте самостоятельную функцию getInfo, которая будет возвращать в одной строк е имя, фамилию и город пользователя, используя this. Эта функция будет использоваться для вывода полного имени в вашем коде, вызывать ее нужно будет с помощью метода call.
@@ -91,48 +111,80 @@ function hasReactSkill(person) {
 
 //5. Проверьте, все ли пользователи старше 18 лет
 function checkAge() {
-    let allYear18 = persons.every(p => {
-        let dateParts = p.personal.birthday.split('.');
-        let userDate = new Date(+dateParts[2]);
-        let currentYear = new Date().getFullYear();
-        let age = currentYear - userDate;
+    const allYear18 = persons.every(p => {
+        const dateParts = p.personal.birthday.split('.');
+        const userDate = new Date(`${dateParts[2]}.${dateParts[1]}.${dateParts[0]}`).getFullYear();
+        const currentYear = new Date().getFullYear();
+        const age = currentYear - userDate;
         return age > 18;
+        console.log(age);
     });
     console.log('Все пользователи старше 18 лет: ' + allYear18);
 }
 
 //6. Найдите всех backend-разработчиков из Москвы, которые ищут работу на полный день и отсортируйте их в порядке возрастания зарплатных ожиданий.
-function getBackendDevelopersFromMoscow() {
-    let backendDevelopersFromMoscow = persons.filter(p => {
-        let isBackend = false;
-        let hasValidSalaryReq = false;
-        let hasValidEmploymentReq = false;
-        let isLocatedInMoscow = false;
-
-        let specialization = specializations.find(s => s.id === p.personal.specializationId);
-        if (specialization && specialization.name.toLowerCase() === 'backend') {
-            isBackend = true;
-        }
-
-        let salaryReq = p.request.find(req => req.name.toLowerCase() === 'зарплата');
-        if (salaryReq && salaryReq.value >= 0) {
-            hasValidSalaryReq = true;
-        }
-        let employmentReq = p.request.find(req => req.name.toLowerCase() === 'тип занятости');
-        if (employmentReq && employmentReq.value.toLowerCase() === 'полная') {
-            hasValidEmploymentReq = true;
-        }
-
-        if (p.personal.locationId === 1) {
-            isLocatedInMoscow = true;
-        }
-
-        return isBackend && hasValidSalaryReq && hasValidEmploymentReq && isLocatedInMoscow;
+function BackendDevelopersFromMoscowAll() {
+    return persons.filter(person => {
+        return isBackend(person) && employmentAll(person);
     });
+    console.log('backend-разработчиков из Москвы, которые ищут работу на полный день и отсортируйте их в порядке возрастания зарплатных ожиданий');
 
-    backendDevelopersFromMoscow.sort((a, b) => {
-        let aSalary = a.request.find(req => req.name.toLowerCase() === 'зарплата').value;
-        let bSalary = b.request.find(req => req.name.toLowerCase() === 'зарплата').value;
-        return aSalary - bSalary;
+}
+
+function isBackend(person) {
+    const BackendSpecialization = specializations.find(s => s.name.toLowerCase() === 'backend');
+    return person.personal.specializationId === BackendSpecialization.id && person.personal.locationId === 1;
+}
+
+function employmentAll(person) {
+    return person.request.some((request) => request.value.toLowerCase() === 'полная');
+}
+
+
+//7.Найдите всех дизайнеров, которые владеют Photoshop и Figma одновременно на уровне не ниже 6 баллов.
+function figmaAndPhotoshop() {
+    return persons.filter(person => {
+        return isDesigner(person) && hasPhotoshopandFigma(person);
     });
+    console.log('Не удалось найти  дизайнеров, которые владеют Photoshop и Figma одновременно на уровне не ниже 6 баллов');
+
+}
+
+function hasPhotoshopandFigma(person) {
+    return person.skills.some((skill) => skill.name.toLowerCase() === 'photoshop' && skill.level >= 6)
+        && person.skills.some(skill => skill.name.toLowerCase() === 'figma' && skill.level >= 6);
+}
+
+//8.Соберите команду для разработки проекта:
+// - дизайнера, который лучше всех владеет Figma
+// - frontend разработчика с самым высоким уровнем знания Angular
+// - лучшего backend разработчика на Go
+
+function createDesigner() {
+    return persons.filter(person => {
+        return hasFigmaBest(person);
+    });
+    console.log('Не удалось найти лучшего дизайнера');
+}
+
+function hasFigmaBest(person) {
+    return person.skills.some(skill => skill.name.toLowerCase() === 'figma' && skill.level >= 10);
+}
+function createDeveloper() {
+    return persons.filter(person => {
+        return hasAngularBest(person);
+    });
+    console.log('Не удалось найти лучшего разработчика');
+}
+function hasAngularBest(person) {
+    return person.skills.some((skill) => skill.name.toLowerCase() === 'angular' && skill.level >= 9);
+}
+function createBackendGo() {
+    return persons.filter(person => {
+        return hasGoBest(person);
+    });
+    console.log('Не удалось найти лучшего бэкенд разработчика');
+}
+function hasGoBest(person) {
+    return person.skills.some((skill) => skill.name.toLowerCase() === 'go' && skill.level >= 9);
 }
